@@ -48,10 +48,32 @@
     - [11.1.5箭头函数](#1115箭头函数)
     - [](#)
 - [12JavaScript中执行上下文和执行栈是什么？](#12javascript中执行上下文和执行栈是什么)
-- [- Eval 函数执行上下文：指的是运行在 eval 函数中的代码，很少用而且不建议使用](#--eval-函数执行上下文指的是运行在-eval-函数中的代码很少用而且不建议使用)
+  - [12.1执行上下文的生命周期](#121执行上下文的生命周期)
+    - [12.1.1创建阶段](#1211创建阶段)
+      - [12.1.1.1This Binding](#12111this-binding)
+      - [12.1.1.2词法环境](#12112词法环境)
+      - [12.1.1.3变量环境](#12113变量环境)
+    - [12.1.2执行阶段](#1212执行阶段)
+    - [12.1.3回收阶段](#1213回收阶段)
+  - [12.2执行栈](#122执行栈)
+- [13JavaScript中的事件模型如何理解?](#13javascript中的事件模型如何理解)
+  - [13.1事件模型](#131事件模型)
+  - [13.1.1原始事件模型](#1311原始事件模型)
+  - [13.1.2标准事件模型](#1312标准事件模型)
+- [14说说 typeof 与 instanceof 区别?](#14说说-typeof-与-instanceof-区别)
+- [15解释下什么是事件代理？应用场景？](#15解释下什么是事件代理应用场景)
+- [16说说new操作符具体都干了什么？](#16说说new操作符具体都干了什么)
+  - [16.1手写new操作符](#161手写new操作符)
+- [17Ajax 原理是什么？如何实现？](#17ajax-原理是什么如何实现)
+  - [17.1实现过程](#171实现过程)
+    - [17.1.1创建XMLHttpRequest对象](#1711创建xmlhttprequest对象)
+    - [17.1.2与服务器建立连接](#1712与服务器建立连接)
+    - [17.1.3给服务端发送数据](#1713给服务端发送数据)
+    - [17.1.4绑定onreadystatechange事件](#1714绑定onreadystatechange事件)
+  - [17.2手写](#172手写)
+- [18](#18)
+- [19](#19)
 - [13](#13)
-- [14](#14)
-- [13](#13-1)
 
 <!-- /TOC -->
 ## 1.数组常用方法
@@ -919,13 +941,288 @@ console.log(number);  //输出的结果是27
 ```
 ## 12JavaScript中执行上下文和执行栈是什么？
 执行上下文的类型分为三种：
-
 - 全局执行上下文：只有一个，浏览器中的全局对象就是 window对象，this 指向这个全局对象
 - 函数执行上下文：存在无数个，只有在函数被调用的时候才会被创建，每次调用函数都会创建一个新的执行上下文
 - Eval 函数执行上下文：指的是运行在 eval 函数中的代码，很少用而且不建议使用
----
-## 13
-## 14
+### 12.1执行上下文的生命周期
+- 执行上下文的生命周期包括三个阶段：创建阶段 → 执行阶段 → 回收阶段
+#### 12.1.1创建阶段
+创建阶段即当函数被调用，但未执行任何其内部代码之前
+
+创建阶段做了三件事：
+- 确定 this 的值，也被称为 This Binding
+- LexicalEnvironment（词法环境） 组件被创建
+- VariableEnvironment（变量环境） 组件被创建
+##### 12.1.1.1This Binding
+确定this的值我们前面讲到，this的值是在执行的时候才能确认，定义的时候不能确认
+
+##### 12.1.1.2词法环境
+词法环境有两个组成部分：
+
+全局环境：是一个没有外部环境的词法环境，其外部环境引用为null，有一个全局对象，this 的值指向这个全局对象
+
+函数环境：用户在函数中定义的变量被存储在环境记录中，包含了arguments 对象，外部环境的引用可以是全局环境，也可以是包含内部函数的外部函数环境
+##### 12.1.1.3变量环境
+变量环境也是一个词法环境，因此它具有上面定义的词法环境的所有属性
+
+在 ES6 中，词法环境和变量环境的区别在于前者用于存储函数声明和变量（ let 和 const ）绑定，而后者仅用于存储变量（ var ）绑定
+
+
+let和const定义的变量a和b在创建阶段没有被赋值，但var声明的变量从在创建阶段被赋值为undefined
+
+这是因为，创建阶段，会在代码中扫描变量和函数声明，然后将函数声明存储在环境中
+
+但变量会被初始化为undefined(var声明的情况下)和保持uninitialized(未初始化状态)(使用let和const声明的情况下)
+
+这就是变量提升的实际原因
+
+#### 12.1.2执行阶段
+在这阶段，执行变量赋值、代码执行
+
+如果 Javascript 引擎在源代码中声明的实际位置找不到变量的值，那么将为其分配 undefined 值
+
+#### 12.1.3回收阶段
+执行上下文出栈等待虚拟机回收执行上下文
+
+### 12.2执行栈
+
+执行栈，也叫调用栈，具有 LIFO（后进先出）结构，用于存储在代码执行期间创建的所有执行上下文
+
+
+当Javascript引擎开始执行你第一行脚本代码的时候，它就会创建一个全局执行上下文然后将它压到执行栈中
+
+每当引擎碰到一个函数的时候，它就会创建一个函数执行上下文，然后将这个执行上下文压到执行栈中
+
+引擎会执行位于执行栈栈顶的执行上下文(一般是函数执行上下文)，当该函数执行结束后，对应的执行上下文就会被弹出，然后控制流程到达执行栈的下一个执行上下文
+## 13JavaScript中的事件模型如何理解?
+事件流都会经历三个阶段：
+- 事件捕获阶段(capture phase)
+- 处于目标阶段(target phase)
+- 事件冒泡阶段(bubbling phase)
+
+### 13.1事件模型
+事件模型可以分为三种：
+- 原始事件模型（DOM0级）
+- 标准事件模型（DOM2级）
+- IE事件模型（基本不用）
+### 13.1.1原始事件模型
+事件绑定监听函数比较简单, 有两种方式：
+- HTML代码中直接绑定
+```
+<input type="button" onclick="fun()">
+```
+- 通过JS代码绑定
+```
+var btn = document.getElementById('.btn');
+btn.onclick = fun;
+```
+特性
+- 绑定速度快
+DOM0级事件具有很好的跨浏览器优势，会以最快的速度绑定，但由于绑定速度太快，可能页面还未完全加载出来，以至于事件可能无法正常运行
+
+- 只支持冒泡，不支持捕获
+
+- 同一个类型的事件只能绑定一次
+
+
+删除 DOM0 级事件处理程序只要将对应事件属性置为null即可
+```
+btn.onclick = null;
+```
+### 13.1.2标准事件模型
+在该事件模型中，一次事件共有三个过程:
+
+- 事件捕获阶段：事件从document一直向下传播到目标元素, 依次检查经过的节点是否绑定了事件监听函数，如果有则执行
+- 事件处理阶段：事件到达目标元素, 触发目标元素的监听函数
+- 事件冒泡阶段：事件从目标元素冒泡到document, 依次检查经过的节点是否绑定了事件监听函数，如果有则执行
+
+事件绑定监听函数的方式如下:
+```
+addEventListener(eventType, handler, useCapture)
+```
+事件移除监听函数的方式如下:
+```
+removeEventListener(eventType, handler, useCapture)
+```
+
+参数如下：
+- eventType指定事件类型(不要加on)
+- handler是事件处理函数
+- useCapture是一个boolean用于指定是否在捕获阶段进行处理，一般设置为false与IE浏览器保持一致
+举个例子：
+```
+var btn = document.getElementById('.btn');
+btn.addEventListener(‘click’, showMessage, false);
+btn.removeEventListener(‘click’, showMessage, false);
+```
+特性
+- 可以在一个DOM元素上绑定多个事件处理器，各自并不会冲突
+
+- 执行时机
+当第三个参数(useCapture)设置为true就在捕获过程中执行，反之在冒泡过程中执行处理函数
+## 14说说 typeof 与 instanceof 区别?
+关于instanceof的实现原理，可以参考下面：
+```
+function myInstanceof(left, right) {
+    // 这里先用typeof来判断基础数据类型，如果是，直接返回false
+    if(typeof left !== 'object' || left === null) return false;
+    // getProtypeOf是Object对象自带的API，能够拿到参数的原型对象
+    let proto = Object.getPrototypeOf(left);
+    while(true) {                  
+        if(proto === null) return false;
+        if(proto === right.prototype) return true;//找到相同原型对象，返回true
+        proto = Object.getPrototypeof(proto);
+    }
+}
+```
+也就是顺着原型链去找，直到找到相同的原型对象，返回true，否则为false
+
+
+- 如果需要通用检测数据类型，可以采用Object.prototype.toString，调用该方法，统一返回格式“[object Xxx]”的字符串
+## 15解释下什么是事件代理？应用场景？
+事件委托，会把一个或者一组元素的事件委托到它的父层或者更外层元素上，真正绑定事件的是外层元素，而不是目标元素
+
+当事件响应到目标元素上时，会通过事件冒泡机制从而触发它的外层元素的绑定事件上，然后在外层元素上去执行函数
+
+适合事件委托的事件有：click，mousedown，mouseup，keydown，keyup，keypress
+
+从上面应用场景中，我们就可以看到使用事件委托存在两大优点：
+
+- 减少整个页面所需的内存，提升整体性能
+- 动态绑定，减少重复工作
+
+但是使用事件委托也是存在局限性：
+
+- focus、blur这些事件没有事件冒泡机制，所以无法进行委托绑定事件
+
+- mousemove、mouseout这样的事件，虽然有事件冒泡，但是只能不断通过位置去计算定位，对性能消耗高，因此也是不适合于事件委托的
+## 16说说new操作符具体都干了什么？
+从上面介绍中，我们可以看到new关键字主要做了以下的工作：
+
+- 创建一个新的对象obj
+- 将对象与构建函数通过原型链连接起来
+- 将构建函数中的this绑定到新建的对象obj上
+- 根据构建函数返回类型作判断，如果是原始值则被忽略，如果是返回对象，需要正常处理
+### 16.1手写new操作符
+
+现在我们已经清楚地掌握了new的执行过程
+
+那么我们就动手来实现一下new
+```
+function mynew(Func, ...args) {
+    // 1.创建一个新对象
+    const obj = {}
+    // 2.新对象原型指向构造函数原型对象
+    obj.__proto__ = Func.prototype
+    // 3.将构建函数的this指向新对象
+    let result = Func.apply(obj, args)
+    // 4.根据返回值判断
+    return result instanceof Object ? result : obj
+```
+## 17Ajax 原理是什么？如何实现？
+Ajax的原理简单来说通过XmlHttpRequest对象来向服务器发异步请求，从服务器获得数据，然后用JavaScript来操作DOM而更新页面
+### 17.1实现过程
+实现 Ajax异步交互需要服务器逻辑进行配合，需要完成以下步骤：
+
+- 创建 Ajax的核心对象 XMLHttpRequest对象
+
+- 通过 XMLHttpRequest 对象的 open() 方法与服务端建立连接
+
+- 构建请求所需的数据内容，并通过XMLHttpRequest 对象的 send() 方法发送给服务器端
+
+- 通过 XMLHttpRequest 对象提供的 onreadystatechange 事件监听服务器端你的通信状态
+
+- 接受并处理服务端向客户端响应的数据结果
+
+- 将处理结果更新到 HTML页面中
+#### 17.1.1创建XMLHttpRequest对象
+通过XMLHttpRequest() 构造函数用于初始化一个 XMLHttpRequest 实例对象
+```
+const xhr = new XMLHttpRequest();
+```
+#### 17.1.2与服务器建立连接
+通过 XMLHttpRequest 对象的 open() 方法与服务器建立连接
+```
+xhr.open(method, url, [async][, user][, password])
+```
+参数说明：
+
+- method：表示当前的请求方式，常见的有GET、POST
+
+- url：服务端地址
+
+- async：布尔值，表示是否异步执行操作，默认为true
+
+- user: 可选的用户名用于认证用途；默认为`null
+
+- password: 可选的密码用于认证用途，默认为`null
+#### 17.1.3给服务端发送数据
+通过 XMLHttpRequest 对象的 send() 方法，将客户端页面的数据发送给服务端
+```
+xhr.send([body])
+```
+- body: 在 XHR 请求中要发送的数据体，如果不传递数据则为 null
+
+如果使用GET请求发送数据的时候，需要注意如下：
+
+- 将请求数据添加到open()方法中的url地址中
+- 发送请求数据中的send()方法中参数设置为null
+#### 17.1.4绑定onreadystatechange事件
+onreadystatechange 事件用于监听服务器端的通信状态，主要监听的属性为XMLHttpRequest.readyState 
+
+只要 readyState属性值一变化，就会触发一次 readystatechange 事件
+
+
+- XMLHttpRequest.responseText属性用于接收服务器端的响应结果
+### 17.2手写
+```
+function ajax(options){
+  //创建XMLHttpRequest对象
+  const xhr=new XMLHTTPRequest()
+   //初始化参数的内容
+  options=options||{}
+  options.type=(options.type||'GET).toUpperCase()
+  options.dataType=option.dataType||'json'
+  const params=options.data
+  //发送请求
+  if(options.type=='GET'){
+    xhr.open('GET',options.url+'?'+params,true)
+    xhr.send(null)
+  }else if(options.type=='POST'){
+    xhr.open('POST',options.url,true)
+    xhr.send(params)
+  }
+  
+  xhr.onreadystatechange=functuon(){
+    if(xhr.readyState==4){
+      let status=xhr.status
+      if(status>200&&status<300>){
+        options.success&&options.success{
+          xhr.responseText,xhr.resposeXMl
+        }
+      }else{
+        options.fail&&options.fail(status)
+      }
+    }
+  }
+}
+```
+```
+ajax({
+    type: 'post',
+    dataType: 'json',
+    data: {},
+    url: 'https://xxxx',
+    success: function(text,xml){//请求成功后的回调函数
+        console.log(text)
+    },
+    fail: function(status){////请求失败后的回调函数
+        console.log(status)
+    }
+})
+```
+## 18
+## 19
 
 
 
