@@ -1,9 +1,7 @@
 <!-- TOC -->
 
 - [1.数组常用方法](#1数组常用方法)
-- [length()](#length)
 - [2.字符串常用方法](#2字符串常用方法)
-- [length()](#length-1)
 - [3.类型转换机制](#3类型转换机制)
   - [3.1显示转换](#31显示转换)
     - [3.1。1数字 Number()](#311数字-number)
@@ -36,44 +34,6 @@
   - [10.2构造函数继承](#102构造函数继承)
   - [10.3组合继承](#103组合继承)
   - [10.4原型式继承](#104原型式继承)
-  - [10.5寄生式继承](#105寄生式继承)
-  - [10.6寄生组合式继承](#106寄生组合式继承)
-- [11说说你对Javascript中this对象的理解](#11说说你对javascript中this对象的理解)
-  - [11.1绑定规则](#111绑定规则)
-    - [11.1.1默认绑定](#1111默认绑定)
-    - [11.1.2隐式绑定](#1112隐式绑定)
-- [此时this指向的是window，这里的大家需要记住，this永远指向的是最后调用它的对象，虽然fn是对象b的方法，但是fn赋值给j时候并没有执行，所以最终指向window](#此时this指向的是window这里的大家需要记住this永远指向的是最后调用它的对象虽然fn是对象b的方法但是fn赋值给j时候并没有执行所以最终指向window)
-    - [11.1.3new绑定](#1113new绑定)
-    - [11.1.4显示修改](#1114显示修改)
-    - [11.1.5箭头函数](#1115箭头函数)
-    - [](#)
-- [12JavaScript中执行上下文和执行栈是什么？](#12javascript中执行上下文和执行栈是什么)
-  - [12.1执行上下文的生命周期](#121执行上下文的生命周期)
-    - [12.1.1创建阶段](#1211创建阶段)
-      - [12.1.1.1This Binding](#12111this-binding)
-      - [12.1.1.2词法环境](#12112词法环境)
-      - [12.1.1.3变量环境](#12113变量环境)
-    - [12.1.2执行阶段](#1212执行阶段)
-    - [12.1.3回收阶段](#1213回收阶段)
-  - [12.2执行栈](#122执行栈)
-- [13JavaScript中的事件模型如何理解?](#13javascript中的事件模型如何理解)
-  - [13.1事件模型](#131事件模型)
-  - [13.1.1原始事件模型](#1311原始事件模型)
-  - [13.1.2标准事件模型](#1312标准事件模型)
-- [14说说 typeof 与 instanceof 区别?](#14说说-typeof-与-instanceof-区别)
-- [15解释下什么是事件代理？应用场景？](#15解释下什么是事件代理应用场景)
-- [16说说new操作符具体都干了什么？](#16说说new操作符具体都干了什么)
-  - [16.1手写new操作符](#161手写new操作符)
-- [17Ajax 原理是什么？如何实现？](#17ajax-原理是什么如何实现)
-  - [17.1实现过程](#171实现过程)
-    - [17.1.1创建XMLHttpRequest对象](#1711创建xmlhttprequest对象)
-    - [17.1.2与服务器建立连接](#1712与服务器建立连接)
-    - [17.1.3给服务端发送数据](#1713给服务端发送数据)
-    - [17.1.4绑定onreadystatechange事件](#1714绑定onreadystatechange事件)
-  - [17.2手写](#172手写)
-- [18](#18)
-- [19](#19)
-- [13](#13)
 
 <!-- /TOC -->
 ## 1.数组常用方法
@@ -1221,19 +1181,812 @@ ajax({
     }
 })
 ```
-## 18
-## 19
+## 18bind、call、apply 区别？如何实现一个bind?
+apply、call、bind三者的区别在于：
+- 三者都可以改变函数的this对象指向
+- 三者第一个参数都是this要指向的对象，如果如果没-有这个参数或参数为undefined或null，则默认指向全局window
+- 三者都可以传参，但是apply是数组，而call是参数列表，且apply和call是一次性传入参数，而bind可以分为多次传入
+- bind是返回绑定this之后的函数，apply、call 则是立即执行
+### 18.1手写bind:bangbang:
+bind主要做了三件事
+- 返回一个新的函数
+- 新函数this指向bind的第一个参数
+- 其余参数作为新函数的参数传入
+核心要点:
+1.对于普通函数，绑定this指向
+2.对于构造函数，要保证原函数的原型对象上的属性不能丢失
+```
+Function.propertype.mybind=funciton(context,...args){
+  if(typeof this!=function){
+    throw new TypeError('Error')
+  }
+  var fn=this
+  var args=[...argsments].slice(1)
+  return function Fn(){
+    return fn.apply(this instanceof Fn? new fn(..argments):context,args.concat(...arguments))
+  }
+  
+}
+
+Function.prototype.bind2 = function (context) {
+
+    if (typeof this !== "function") {
+      throw new Error("Function.prototype.bind - what is trying to be bound is not callable");
+    }
+
+    var self = this;
+    var args = Array.prototype.slice.call(arguments, 1);
+
+    var fNOP = function () {};
+
+    var fBound = function () {
+        var bindArgs = Array.prototype.slice.call(arguments);
+        return self.apply(this instanceof fNOP ? this : context, args.concat(bindArgs));
+    }
+
+    fNOP.prototype = this.prototype;
+    fBound.prototype = new fNOP();
+    return fBound;
+}
+```
+## 19说说你对JavaScript中事件循环的理解
+常见的微任务有：
+
+- Promise.then
+
+- MutaionObserver
+
+- Object.observe（已废弃；Proxy 对象替代）
+
+- process.nextTick（Node.js）
+常见的宏任务有：
+
+- script (可以理解为外层同步代码)
+- setTimeout/setInterval
+- UI rendering/UI事件
+- postMessage、MessageChannel
+- setImmediate、I/O（Node.js）
 
 
+await 会阻塞下面的代码（即加入微任务队列），先执行 async外面的同步代码，同步代码执行完，再回到 async 函数中，再执行之前阻塞的代码
+
+JS调用栈
+JS调用栈采用的是后进先出的规则，当函数执行的时候，会被添加到栈的顶部，当执行栈执行完成后，就会从栈顶移出，直到栈内被清空。
+## 20说说你对正则表达式的理解？应用场景？
+贪婪模式：在匹配过程中，尝试可能的顺序是从多往少的方向去尝试
+```
+const string = "12345";
+const regx = /(\d{1,3})(\d{1,3})/;
+console.log( string.match(reg) );
+// => ["12345", "123", "45", index: 0, input: "12345"]
+```
+懒惰模式：惰性量词就是在贪婪量词后面加个问号。表示尽可能少的匹配
+```
+var string = "12345";
+var regex = /(\d{1,3}?)(\d{1,3})/;
+console.log( string.match(regex) );
+// => ["1234", "1", "234", index: 0, input: "12345"]
+```
+正则表达式常被用于某些方法，我们可以分成两类：
+
+- 字符串（str）方法：match、matchAll、search、replace、split
+- 正则对象下（regexp）的方法：test、exec
+
+### 20.1.1str.match(regexp)
+如果 regexp 不带有 g 标记
+```
+let str = "I love JavaScript";
+
+let result = str.match(/Java(Script)/);
+
+console.log( result[0] );     // JavaScript（完全匹配）
+console.log( result[1] );     // Script（第一个分组）
+console.log( result.length ); // 2
+
+// 其他信息：
+console.log( result.index );  // 7（匹配位置）
+console.log( result.input );  // I love JavaScript（源字符串）
+```
+如果 regexp 带有 g 标记，则它将所有匹配项的数组作为字符串返回，而不包含分组和其他详细信息
+```
+let str = "I love JavaScript";
+
+let result = str.match(/Java(Script)/g);
+
+console.log( result[0] ); // JavaScript
+console.log( result.length ); // 1
+```
+如果没有匹配项，则无论是否带有标记 g ，都将返回 null
+```
+let str = "I love JavaScript";
+
+let result = str.match(/HTML/);
+
+console.log(result); // null
+```
+### 20.1.2str.matchAll(regexp)
+返回一个包含所有匹配正则表达式的结果及分组捕获组的迭代器
+```
+const regexp = /t(e)(st(\d?))/g;
+const str = 'test1test2';
+
+const array = [...str.matchAll(regexp)];
+
+console.log(array[0]);
+// expected output: Array ["test1", "e", "st1", "1"]
+
+console.log(array[1]);
+// expected output: Array ["test2", "e", "st2", "2"]
+```
+### 20.1.3str.search(regexp)
+返回第一个匹配项的位置，如果未找到，则返回 -1
+### 20.1.4str.replace(regexp)
+替换与正则表达式匹配的子串，并返回替换后的字符串。在不设置全局匹配g的时候，只替换第一个匹配成功的字符串片段
+```
+const reg1=/javascript/i;
+const reg2=/javascript/ig;
+console.log('hello Javascript Javascript Javascript'.replace(reg1,'js'));
+//hello js Javascript Javascript
+console.log('hello Javascript Javascript Javascript'.replace(reg2,'js'));
+//hello js js js
+```
+### 20.1.5str.split(regexp)
+使用正则表达式（或子字符串）作为分隔符来分割字符串
+```
+console.log('12, 34, 56'.split(/,\s*/)) // 数组 ['12', '34', '56']
+```
+### 20.2.1regexp.exec(str)
+- 如果没有 g，那么 regexp.exec(str) 返回的第一个匹配与 str.match(regexp) 完全相同
+
+- 如果有标记 g，调用 regexp.exec(str) 会返回第一个匹配项，并将紧随其后的位置保存在属性regexp.lastIndex 中。下一次同样的调用会从位置 regexp.lastIndex 开始搜索，返回下一个匹配项，并将其后的位置保存在 regexp.lastIndex 中
 
 
+### 20.2.2regexp.test(str)
+查找匹配项，然后返回 true/false 表示是否存在
+```
+let str = "I love JavaScript";
+
+// 这两个测试相同
+console.log( /love/i.test(str) ); // true
+```
+### 20.3
+例子
+- 1.验证QQ合法性（5~15位、全是数字、不以0开头）：
+```
+const reg = /^[1-9][0-9]{4,14}$/
+const isvalid = patrn.exec(s)
+```
+- 2.校验用户账号合法性（只能输入5-20个以字母开头、可带数字、“_”、“.”的字串）：
+```
+var patrn=/^[a-zA-Z]{1}([a-zA-Z0-9]|[._]){4,19}$/;
+const isvalid = patrn.exec(s)
+```
+-3.
+
+### 20.4补充
+#### 20.4.1
+- 只要引入集合区间和通配符的方式就可以实现一对多的匹配了
+- 在正则表达式里，集合的定义方式是使用中括号[和]
+#### 20.4.2位置边界
+- 1.单词边\b  boundary
+- 2.字符串边界
+#### 20.4.3子表达式
+#### 20.4.3.1分组
+  ()
+#### 20.4.3.2回溯引用
+回溯引用
+所谓回溯引用（backreference）指的是模式的后面部分引用前面已经匹配到的子字符串。
+
+回溯引用在替换字符串中十分常用，语法上有些许区别，用$1,$2...来引用要被替换的字符串。下面以js代码作演示：
+```
+var str = 'abc abc 123';
+str.replace(/(ab)c/g,'$1g');
+// 得到结果 'abg abg 123'
+```
+如果我们不想子表达式被引用，可以使用非捕获正则(?:regex)这样就可以避免浪费内存。
+var str = 'scq000'.
+str.replace(/(scq00)(?:0)/, '$1,$2')
+// 返回scq00,$2
+// 由于使用了非捕获正则，所以第二个引用没有值，这里直接替换为$2
+有时，我们需要限制回溯引用的适用范围。那么通过前向查找和后向查找就可以达到这个目的。
+#### 20.4.3.3
+##### 20.4.3.3.1前向查找
+前向查找(lookahead)是用来限制后缀的。**凡是以(?=regex)包含的子表达式在匹配过程中都会用来限制前面的表达式的匹配**。例如happy happily这两个单词，我想获得以happ开头的副词，那么就可以使用happ(?=ily)来匹配。如果我想过滤所有以happ开头的副词，那么也可以**采用负前向查找的正则happ(?!ily)**，就会匹配到happy单词的happ前缀。
+##### 20.4.3.3.2后向查找
+介绍完前向查找，接着我们再来介绍一下它的反向操作：后向查找(lookbehind)。后向查找(lookbehind)是通过指定一个子表达式，然后从符合这个子表达式的位置出发开始查找符合规则的字串。
+```
+/(?<=app)ple/
+```
+其中**(?<=regex)的语法就是我们这里要介绍的后向查找**。regex指代的子表达式会作为限制项进行匹配，匹配到这个子表达式后，就会继续向后查找。另外一种限制匹配是**利用(?<!regex) 语法，这里称为负后向查找**。与正前向查找不同的是，被指定的子表达式不能被匹配到。于是，在上面的例子中，如果想要查找apple的ple也可以这么写成/(?<!peo)ple。
+
+最后回顾一下这部分内容：
+|回溯查找|正则|记忆方式
+|-|-|-|
+|引用|\0,\1,\2 和 $0, $1, $2|转义+数字
+|非捕获组|(?:)|引用表达式(()), 本身不被消费(?),引用(:)
+|前向查找|(?=)|引用子表达式(())，本身不被消费(?), 正向的查找(=)
+|前向负查找|(?!)|引用子表达式(())，本身不被消费(?), 负向的查找(!)
+|后向查找|(?<=)|引用子表达式(())，本身不被消费(?), 后向的(<，开口往后)，正的查找(=)
+|后向负查找|(?<!)|引用子表达式(())，本身不被消费(?), 后向的(<，开口往后)，负的查找(!)
+
+#### 20.4.3.4逻辑处理
+而非关系，分为两种情况：一种是字符匹配，另一种是子表达式匹配。
+|逻辑关系|正则元字符
+|-|-|
+|与|无
+|非|[^regex]和!
+|或||
+## 21说说你对DOM的理解，常见的操作有哪些？
+下面就来分析DOM常见的操作，主要分为：
+- 创建节点
+- 查询节点
+- 更新节点
+- 添加节点
+- 删除节点
+### 21.1创建节点
+- createElement
+创建新元素，接受一个参数，即要创建元素的标签名
+```
+const divEl = document.createElement("div");
+```
+- createTextNode
+创建一个文本节点
+```
+const textEl = document.createTextNode("content");
+
+```
+- createDocumentFragment
+用来创建一个文档碎片，它表示一种轻量级的文档，主要是用来存储临时节点，然后把文档碎片的内容一次性添加到DOM中
+```
+const fragment = document.createDocumentFragment();
+```
+当请求把一个DocumentFragment 节点插入文档树时，插入的不是 DocumentFragment自身，而是它的所有子孙节点
+- createAttribute
+创建属性节点，可以是自定义属性
+```
+const dataAttribute = document.createAttribute('custom');
+consle.log(dataAttribute);
+```
+### 21.2获取节点
+- querySelector
+传入任何有效的css 选择器，即可选中单个 DOM元素（首个）：
+```
+document.querySelector('.element')
+document.querySelector('#element')
+document.querySelector('div')
+document.querySelector('[name="username"]')
+document.querySelector('div + p > span')
+```
+如果页面上没有指定的元素时，返回 null
+- querySelectorAll
+返回一个包含节点子树内所有与之相匹配的Element节点列表，如果没有相匹配的，则返回一个空节点列表
+
+const notLive = document.querySelectorAll("p");
+需要注意的是，该方法返回的是一个 NodeList的静态实例，它是一个静态的“快照”，而非“实时”的查询
+
+关于获取DOM元素的方法还有如下，就不一一述说
+```
+document.getElementById('id属性值');返回拥有指定id的对象的引用
+document.getElementsByClassName('class属性值');返回拥有指定class的对象集合
+document.getElementsByTagName('标签名');返回拥有指定标签名的对象集合
+document.getElementsByName('name属性值'); 返回拥有指定名称的对象结合
+document/element.querySelector('CSS选择器');  仅返回第一个匹配的元素
+document/element.querySelectorAll('CSS选择器');   返回所有匹配的元素
+document.documentElement;  获取页面中的HTML标签
+document.body; 获取页面中的BODY标签
+document.all[''];  获取页面中的所有元素节点的对象集合型
+```
+除此之外，每个DOM元素还有parentNode、childNodes、firstChild、lastChild、nextSibling、previousSibling
+### 21.3更新节点
+- innerHTML
+不但可以修改一个DOM节点的文本内容，还可以直接通过HTML片段修改DOM节点内部的子树
+```
+// 获取<p id="p">...</p>
+var p = document.getElementById('p');
+// 设置文本为abc:
+p.innerHTML = 'ABC'; // <p id="p">ABC</p>
+// 设置HTML:
+p.innerHTML = 'ABC <span style="color:red">RED</span> XYZ';
+// <p>...</p>的内部结构已修改
+```
+- innerText、textContent
+自动对字符串进行HTML编码，保证无法设置任何HTML标签
+```
+// 获取<p id="p-id">...</p>
+var p = document.getElementById('p-id');
+// 设置文本:
+p.innerText = '<script>alert("Hi")</script>';
+// HTML被自动编码，无法设置一个<script>节点:
+// <p id="p-id">&lt;script&gt;alert("Hi")&lt;/script&gt;</p>
+两者的区别在于读取属性时，innerText不返回隐藏元素的文本，而textContent返回所有文本
+```
+- style
+DOM节点的style属性对应所有的CSS，可以直接获取或设置。遇到-需要转化为驼峰命名
+```
+// 获取<p id="p-id">...</p>
+const p = document.getElementById('p-id');
+// 设置CSS:
+p.style.color = '#ff0000';
+p.style.fontSize = '20px'; // 驼峰命名
+p.style.paddingTop = '2em';
+```
+### 21.4添加节点
+- innerHTML
+如果这个DOM节点是空的，例如，<div></div>，那么，直接使用innerHTML = '<span>child</span>'就可以修改DOM节点的内容，相当于添加了新的DOM节点
+
+如果这个DOM节点不是空的，那就不能这么做，因为innerHTML会直接替换掉原来的所有子节点
+- appendChild
+把一个子节点添加到父节点的最后一个子节点
+- insertBefore
+把子节点插入到指定的位置，使用方法如下：
+```
+parentElement.insertBefore(newElement, referenceElement)
+```
+子节点会插入到referenceElement之前
+- setAttribute
+在指定元素中添加一个属性节点，如果元素中已有该属性改变属性值
+```
+const div = document.getElementById('id')
+div.setAttribute('class', 'white');//第一个参数属性名，第二个参数属性值。
+```
+### 21.5删除节点
+删除一个节点，首先要获得该节点本身以及它的父节点，然后，调用父节点的removeChild把自己删掉
+
+**删除后的节点虽然不在文档树中了，但其实它还在内存中，可以随时再次被添加到别的位置**
+## 22说说你对BOM的理解，常见的BOM对象你了解哪些？
+### 22.1window
+关于窗口控制方法如下：
+- moveBy(x,y)：从当前位置水平移动窗体x个像素，垂直移动窗体y个像素，x为负数，将向左移动窗体，y为负数，将向上移动窗体
+- moveTo(x,y)：移动窗体左上角到相对于屏幕左上角的(x,y)点
+- resizeBy(w,h)：相对窗体当前的大小，宽度调整w个像素，高度调整h个像素。如果参数为负值，将缩小窗体，反之扩大窗体
+- resizeTo(w,h)：把窗体宽度调整为w个像素，高度调整为h个像素
+- scrollTo(x,y)：如果有滚动条，将横向滚动条移动到相对于窗体宽度为x个像素的位置，将纵向滚动条移动到相对于窗体高度为y个像素的位置
+scrollBy(x,y)：如果有滚动条，将横向滚动条向左移动x个像素，将纵向滚动条向下移动y个像素
 
 
+- window.open() 既可以导航到一个特定的url，也可以打开一个新的浏览器窗口
+
+- window.close() 仅用于通过 window.open() 打开的窗口
+### 22.2location
+location属性描述如下：
+|属性名	|例子	|说明
+|-|-|-|
+|hash	|"#contents"	|utl中#后面的字符，没有则返回空串
+|host|	www.wrox.com:80	|服务器名称和端口号
+|hostname	|www.wrox.com	|域名，不带端口号
+|href	http://www.wrox.com:80/WileyCDA/?q=javascript#contents	|完整url
+|pathname	|"/WileyCDA/"|	服务器下面的文件路径
+|port	|80	|url的端口号，没有则为空
+|protocol|	http:	|使用的协议
+|search	|?q=javascript	|url的查询字符串，通常为？后面的内容
+
+location.reload()，此方法可以重新刷新当前页面。这个方法会根据最有效的方式刷新页面，如果页面自上一次请求以来没有改变过，页面就会从浏览器缓存中重新加载
+### 22.3navigator
+navigator 对象主要用来获取浏览器的属性，区分浏览器类型。
+### 22.4screen
+保存的纯粹是客户端能力信息，也就是浏览器窗口外面的客户端显示器的信息，比如像素宽度和像素高度
+### 22.5history
+history对象主要用来操作浏览器URL的历史记录，可以通过参数向前，向后，或者向指定URL跳转
 
 
+history.go()
+```
+history.go('maixaofei.com')
+history.go(3) //向前跳转三个记录
+history.go(-1) //向后跳转一个记录
+```
+history.forword()
+history.back()
+history.length
+## 23举例说明你对尾递归的理解，有哪些应用场景
+尾递归在普通尾调用的基础上，多出了2个特征：
+- 在尾部调用的是函数自身
+- 可通过优化，使得计算仅占用常量栈空间
+### 23.1应用场景
+- 数组求和
+```
+function sum(arr, total) {
+    if(arr.length === 1) {
+        return total
+    }
+    return sum(arr, total + arr.pop())
+}
+```
+- 使用尾递归优化求斐波那契数列
+```
+function factorial2 (n, start = 1, total = 1) {
+    if(n <= 2){
+        return total
+    }
+    return factorial2 (n -1, total, total + start)
+}
+```
+- 数组扁平化
+```
+let a = [1,2,3, [1,2,3, [1,2,3]]]
+// 变成
+let a = [1,2,3,1,2,3,1,2,3]
+// 具体实现
+function flat(arr = [], result = []) {
+    arr.forEach(v => {
+        if(Array.isArray(v)) {
+            result = result.concat(flat(v, []))
+        }else {
+            result.push(v)
+        }
+    })
+    return result
+}
+```
+- 数组对象格式化
+```
+let obj = {
+    a: '1',
+    b: {
+        c: '2',
+        D: {
+            E: '3'
+        }
+    }
+}
+// 转化为如下：
+let obj = {
+    a: '1',
+    b: {
+        c: '2',
+        d: {
+            e: '3'
+        }
+    }
+}
+
+// 代码实现
+function keysLower(obj) {
+    let reg = new RegExp("([A-Z]+)", "g");
+    for (let key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            let temp = obj[key];
+            if (reg.test(key.toString())) {
+                // 将修改后的属性名重新赋值给temp，并在对象obj内添加一个转换后的属性
+                temp = obj[key.replace(reg, function (result) {
+                    return result.toLowerCase()
+                })] = obj[key];
+                // 将之前大写的键属性删除
+                delete obj[key];
+            }
+            // 如果属性是对象或者数组，重新执行函数
+            if (typeof temp === 'object' || Object.prototype.toString.call(temp) === '[object Array]') {
+                keysLower(temp);
+            }
+        }
+    }
+    return obj;
+};
+```
+## 24说说 JavaScript 中内存泄漏的几种情况？
+应用程序分配某段内存后，由于设计错误，导致在释放该段内存之前就失去了对该段内存的控制，从而造成了内存的浪费
+### 24.1垃圾回收机制
+通常情况下有两种实现方式：
+- 标记清除:JavaScript最常用的垃圾收回机制
+- 引用计数
+### 24.2常见内存泄露情况
+- 意外的全局变量
+```
+function foo(arg) {
+    bar = "this is a hidden global variable";
+}
+```
+- 另一种意外的全局变量可能由 this 创建：
+```
+function foo() {
+    this.variable = "potential accidental global";
+}
+// foo 调用自己，this 指向了全局对象（window）
+foo();
+```
+- 定时器也常会造成内存泄露
+```
+var someResource = getData();
+setInterval(function() {
+    var node = document.getElementById('Node');
+    if(node) {
+        // 处理 node 和 someResource
+        node.innerHTML = JSON.stringify(someResource));
+    }
+}, 1000);
+```
+如果id为Node的元素从DOM中移除，该定时器仍会存在，同时，因为回调函数中包含对someResource的引用，定时器外面的someResource也不会被释放
+
+- 包括我们之前所说的闭包，维持函数内局部变量，使其得不到释放
+```
+function bindEvent() {
+  var obj = document.createElement('XXX');
+  var unused = function () {
+    console.log(obj, '闭包内引用obj obj不会被释放');
+  };
+  obj = null; // 解决方法
+}
+```
+- 没有清理对DOM元素的引用同样造成内存泄露
+```
+const refA = document.getElementById('refA');
+document.body.removeChild(refA); // dom删除了
+console.log(refA, 'refA'); // 但是还存在引用能console出整个div 没有被回收
+refA = null;
+console.log(refA, 'refA'); // 解除引用
+```
+包括使用事件监听addEventListener监听的时候，在不监听的情况下使用removeEventListener取消对事件监听
+## 25JavaScript中本地存储的方式有哪些？区别及应用场景？
+javaScript本地缓存的方法我们主要讲述以下四种：
+
+- cookie
+- sessionStorage
+- localStorage
+- indexedDB
+### 25.1cookie
+4kb
+cookie每次请求中都会被发送，如果不使用 HTTPS并对其加密，其保存的信息很容易被窃取，导致安全风险。
+常用属性：
+- Expires 用于设置 Cookie 的过期时间
+```
+Expires=Wed, 21 Oct 2015 07:28:00 GMT
+```
+- Max-Age 用于设置在 Cookie 失效之前需要经过的秒数（优先级比Expires高）
+```
+Max-Age=604800
+```
+- Domain指定了 Cookie 可以送达的主机名
+- Path指定了一个 URL路径，这个路径必须出现在要请求的资源的路径中才可以发送 Cookie 首部
+```
+Path=/docs   # /docs/Web/ 下的资源会带 Cookie 首部
+```
+标记为 Secure的 Cookie只应通过被HTTPS协议加密过的请求发送给服务端
 
 
+关于cookie的修改，首先要确定domain和path属性都是相同的才可以，其中有一个不同得时候都会创建出一个新的cookie
+```
+Set-Cookie:name=aa; domain=aa.net; path=/  # 服务端设置
+document.cookie =name=bb; domain=aa.net; path=/  # 客户端设置
+```
+最后cookie的删除，最常用的方法就是给cookie设置一个过期的事件，这样cookie过期后会被浏览器删除
+
+### 25.2localStorage
+- 存储的信息在同一域中是共享的
+
+- 设置
+```
+localStorage.setItem('username','cfangxu');
+```
+- 获取
+```
+localStorage.getItem('username')
+```
+- 获取键名
+```
+localStorage.key(0) //获取第一个键名
+```
+- 删除
+```
+localStorage.removeItem('username')
+```
+- 一次性清除所有存储
+```
+localStorage.clear()
+```
+localStorage 也不是完美的，它有两个缺点：
+
+- 无法像Cookie一样设置过期时间
+- 只能存入字符串，无法直接存对象
+```
+localStorage.setItem('key', {name: 'value'});
+console.log(localStorage.getItem('key')); // '[object, Object]'
+```
+
+### 25.3indexedDB
+- 储存量理论上没有上限
+- 所有操作都是异步的，相比 LocalStorage 同步操作性能更
+### 25.4区别
+关于cookie、sessionStorage、localStorage三者的区别:
+大小，有效时间
+### 25.5应用场景
+- 标记用户与跟踪用户行为的情况，推荐使用cookie
+- 适合长期保存在本地的数据（令牌），推荐使用localStorage
+- 敏感账号一次性登录，推荐使用sessionStorage
+- 存储大量数据的情况、在线文档（富文本编辑器）保存编辑历史的情况，推荐使用indexedDB
+## 26说说你对函数式编程的理解？优缺点？
+- 主要的编程范式有三种：命令式编程，声明式编程和函数式编程
+
+命令式编程：强调怎么做，关心过程
+声明式编程：强调做什么，只关心结果
+
+- 函数编程属于声明式编程范式
+函数式编程两个基本的运算：合成和柯里化
+
+纯函数
+
+- compose执行是从右到左的。而管道函数，执行顺序是从左到右执行的
 
 
+优缺点：
+更好的状态管理，更简单的复用，等优雅的组合
+缺点：性能，支援占用，递归
+## 27JavaScript中如何实现函数缓存？有哪些应用场景？
+- 函数缓存，就是将函数运算过的结果进行缓存
+- 常用于缓存数据计算结果和缓存对象
+- 实现函数缓存主要依靠闭包、柯里化、高阶函数
+```
+const memoize=function(fn,content){
+    let cache=Object.create(null)
+    content=content||this
+    return (...key)=>{
+        if(!cache[key]){
+            cache[key]=fn.apply(content,key)
+        }
+        return cache[key]
+    }
+}
+```
+## 28说说 JavaScript 数字精度丢失的问题，解决方案？
+javaScript存储方式是双精度浮点数，其长度为8个字节，即64位比特
 
-## 13
+64位比特又可分为三个部分：
+
+- 符号位S：第 1 位是正负数符号位（sign），0代表正数，1代表负数
+- 指数位E：中间的 11 位存储指数（exponent），用来表示次方数，可以为正负数。在双精度浮点数中，指数的固定偏移量为1023
+- 尾数位M：最后的 52 位是尾数（mantissa），超出的部分自动进一舍零
+---
+存储二进制时小数点的偏移量最大为52位，最多可以表达的位数是2^53=9007199254740992，对应科学计数尾数是 9.007199254740992，这也是 JS 最多能表示的精度
+---
+最大可以表示的整数是 2^1024 - 1
+
+## 29说说函数节流和防抖？有什么区别？如何实现？
+- 本质上是优化高频率执行代码的一种手段
+  
+- 节流: n 秒内只运行一次，若在 n 秒内重复触发，只有一次执行
+- 防抖: n 秒后在执行该事件，若在 n 秒内被重复触发，则重新计时
+
+节流
+function throttle(fn,delay){
+    let oldTime=new Date()
+    return (...args)=>{
+        let newTime=new Date()
+        if(newTime-oldTime>=delay){
+            fn.apply(null,args)
+            oldTime=new Date()
+        }
+    }
+}
+function throttle(fn,delay=500){
+    let time=null
+    return (..args)=>{
+        if(!time){
+           time= setTimeout(()=>{
+                fn.apply(null,args)   
+                time=null 
+            },delay)    
+        }
+    }   
+}
+防抖
+function debounce(fn,delay){
+    let time=null
+    return (..args)=>{
+        if(time)clearTimeOut(time)
+        time=setTimeout(()=>{
+            fn(args)
+            time=0
+        },delay)
+    }
+}
+### 29.1应用场景
+防抖在连续的事件，只需触发一次回调的场景有：
+
+- 搜索框搜索输入。只需用户最后一次输入完，再发送请求
+- 手机号、邮箱验证输入检测
+- 窗口大小resize。只需窗口调整完成后，计算窗口大小。防止重复渲染。
+
+节流在间隔一段时间执行一次回调的场景有：
+
+- 滚动加载，加载更多或滚到底部监听
+- 搜索框，搜索联想功能
+## 30JavaScript如何判断一个元素是否在可视区域中？
+- 图片的懒加载
+- 列表的无限滚动
+- 计算广告元素的曝光情况
+- 可点击链接的预加载
+## 31JavaScript如何实现上拉加载，下拉刷新？
+上拉加载
+- scrollTop：滚动视窗的高度距离window顶部的距离，它会随着往上滚动而不断增加，初始值是0，它是一个变化的值
+
+- clientHeight:它是一个定值，表示屏幕可视区域的高度；
+
+- scrollHeight：页面不能滚动时是不存在的，body长度超过window时才会出现，所表示body所有元素的长度
+
+下拉刷新
+
+从上面可以看到，在下拉到松手的过程中，经历了三个阶段：
+
+- 当前手势滑动位置与初始位置差值大于零时，提示正在进行下拉刷新操作
+- 下拉到一定值时，显示松手释放后的操作提示
+- 下拉到达设定最大值松手时，执行回调，提示正在进行更新操作
+## 32大文件上传如何做断点续传？
+上传大文件时，以下几个变量会影响我们的用户体验
+
+- 服务器处理数据的能力
+- 请求超时
+- 网络波动
+
+分片上传
+
+断点续传
+一般实现方式有两种：
+
+- 服务器端返回，告知从哪开始
+- 浏览器端自行处理
+### 32.1使用场景
+
+- 大文件加速上传：当文件大小超过预期大小时，使用分片上传可实现并行上传多个 Part， 以加快上传速度
+- 网络环境较差：建议使用分片上传。当出现上传失败的时候，仅需重传失败的Part
+- 流式上传：可以在需要上传的文件大小还不确定的情况下开始上传。这种场景在视频监控等行业应用中比较常见
+### 32.2
+我们还需要考虑到更多场景，比如
+
+- 切片上传失败怎么办
+- 上传过程中刷新页面怎么办
+- 如何进行并行上传
+- 切片什么时候按数量切，什么时候按大小切
+- 如何结合 Web Work 处理大文件上传
+- 如何实现秒传
+## 33什么是单点登录？如何实现？
+单点登录（Single Sign On），简称为 SSO，是目前比较流行的企业业务整合的解决方案之一
+
+- 同域名下的单点登录
+cookie的domin属性设置为当前域的父域，并且父域的cookie会被子域所共享。path设置为根路径
+
+- 用户登录成功之后，会与sso认证中心及各个子系统建立会话，用户与sso认证中心建立的会话称为全局会话
+
+- 用户与各个子系统建立的会话称为局部会话，局部会话建立之后，用户访问子系统受保护资源将不再通过sso认证中心
+
+全局会话与局部会话有如下约束关系：
+
+- 局部会话存在，全局会话一定存在
+- 全局会话存在，局部会话不一定存在
+- 全局会话销毁，局部会话必须销毁
+## 34web常见的攻击方式有哪些？如何防御？
+我们常见的Web攻击方式有
+
+- XSS (Cross Site Scripting) 跨站脚本攻击
+- CSRF（Cross-site request forgery）跨站请求伪造
+- SQL注入攻击
+### 34.1XXS
+XSS，跨站脚本攻击，允许攻击者将恶意代码植入到提供给其它用户使用的页面中
+
+XSS涉及到三方，即攻击者、客户端与Web应用
+
+**XSS的攻击目标是为了盗取存储在客户端的cookie或者其他网站用于识别客户端身份的敏感信息。一旦获取到合法用户的信息后，攻击者甚至可以假冒合法用户与网站进行交互**
+
+根据攻击的来源，XSS攻击可以分成：
+
+- 存储型
+- 反射型
+- DOM 型
+  
+- 反射型 XSS 跟存储型 XSS 的区别是：存储型 XSS 的恶意代码存在数据库里，反射型 XSS 的恶意代码存在 URL 里。
+
+- DOM 型 XSS 跟前两种 XSS 的区别：DOM 型 XSS 攻击中，取出和执行恶意代码由浏览器端完成，属于前端 JavaScript 自身的安全漏洞，而其他两种 XSS 都属于服务端的安全漏洞
+
+
+XSS攻击的两大要素：
+
+- 攻击者提交而恶意代码
+- 浏览器执行恶意代码
+
+在使用 .innerHTML、.outerHTML、document.write() 时要特别小心，不要把不可信的数据作为 HTML 插到页面上，而应尽量使用 .textContent、.setAttribute() 等
+
+如果用 Vue/React 技术栈，并且不使用 v-html/dangerouslySetInnerHTML 功能，就在前端 render 阶段避免 innerHTML、outerHTML 的 XSS 隐患
+
+DOM 中的内联事件监听器，如 location、onclick、onerror、onload、onmouseover 等，<a> 标签的 href 属性，JavaScript 的 eval()、setTimeout()、setInterval() 等，都能把字符串作为代码运行。
+### 34.2CSRF
+CSRF（Cross-site request forgery）跨站请求伪造：攻击者诱导受害者进入第三方网站，在第三方网站中，向被攻击网站发送跨站请求
+### 34.3CSRF
+Sql 注入攻击，是通过将恶意的 Sql查询或添加语句插入到应用的输入参数中，再在后台 Sql服务器上解析执行进行的攻击
